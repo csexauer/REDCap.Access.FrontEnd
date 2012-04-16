@@ -134,6 +134,7 @@
 <?php
 	$errcond = 0;
 	$supress = 0;
+	$hideform = 0;
 	/* Clears session memory.
 	 * supress supresses the printing of other forms.
 	 */
@@ -147,7 +148,21 @@
 	 * note that supress isn't necessary here, but it exists for adding more
 	 * functionalities.
 	 */
-	if(!isset($_REQUEST['redcap'])){
+	if(isset($_REQUEST['upload'])){
+		$supress = 1;
+		$hideform = 1;
+		echo '<a href="parse.php">Back</a></br>'; 
+		echo '<p>Attempting to upload.</p>';
+		print_program($_SESSION['factors']);
+	}
+	if(isset($_REQUEST['show'])){
+		$supress = 1;
+		$hideform = 1;
+		echo '<a href="parse.php">Back</a></br>'; 
+		print_program($_SESSION['factors']);
+		echo '<a href="parse.php">Back</a></br>'; 
+	}
+	if(!isset($_REQUEST['redcap']) and !$hideform){
 		$supress = 1;
 		print_usage();
 		echo '<form action="parse.php" method="POST">
@@ -357,7 +372,7 @@ function print_function($factors){
 	$access = $factors[1];
 	$form = $factors[2];
 	$table = $factors[3];
-	echo '<p>function insert_' . $form . '_values(){';
+	echo '<p>function insert_' . $form . '_values($server, $api_token){';
 	echo '<p>$REDCapVariables=array(';
 	for($i = 0;$i <sizeof($redcap); $i++){
 		echo '"' . $redcap[$i] . '"';	
@@ -373,9 +388,27 @@ function print_function($factors){
 		if(($i + 1) < sizeof($access)){	echo ', ';}
 	}
 	echo ' FROM ' . $table . ' ORDER BY ['. $redcap[0].']";</p>';
-	echo '<p>$theevent = '.$form.'</p>';
-	echo '<p>insertGenericValue($REDCapVariables, $SQL, $theevent);';
+	echo '<p>$theevent = "'.$form.'"</p>';
+	echo '<p>insertGenericValue($REDCapVariables, $SQL, $theevent, $server, $api_token);';
 	echo '<p>}</p>';		
+}
+function run_function($factors){
+	$redcap = $factors[0];
+	$access = $factors[1];
+	$form = $factors[2];
+	$table = $factors[3];
+	
+	$SQL = "SELECT ";
+	for($i = 0; $i<sizeof($access); $i++){
+		$SQL = $SQL . '[' . $access[$i] . ']';
+		if($redcap[$i] != $access[$i]){
+			$SQL = $SQL . ' as ' . $redcap[$i]; 
+		}
+		if(($i + 1) < sizeof($access)){	$SQL = $SQL .', ';}
+	}
+	$SQL = $SQL . ' FROM ' . $table . ' ORDER BY ['. $redcap[0].']';
+	echo $sql;
+	insertGenericValue($redcap, $SQL, $form, $_REQUEST['hosturl'], $_REQUEST['api_tok']);
 }
 
 /* This prints functions for each form, and also sets up
@@ -383,14 +416,55 @@ function print_function($factors){
  */
 function print_program($factors){
 	$numfacs = sizeof($factors);
-	echo '<p>';
-	for($i = 0; $i<$numfacs; $i++){
-		echo 'insert_' . $factors[$i][2] . '_values();</br>';
-	}	
-	for($i = 0; $i<$numfacs; $i++){
-		print_function($factors[$i]);
+	if(!isset($_REQUEST['upload'])){
+		echo '<p>\<\?php</p>';
+		echo 'include \'upload.php\';</br></br>';
+		if(strlen($_REQUEST['hosturl']) > 0)
+			echo '<p>$server = "'.$_REQUEST['hosturl'].'";</p>';
+		else
+			echo '<p>$server = "SERVER URL HERE" ;</p>';
+		if(strlen($_REQUEST['api_tok']) > 0)
+			echo '<p>$api_token = "'.$_REQUEST['api_tok'].'";</p>';
+		else
+			echo '<p>$api_token = "YOUR TOKEN NAME HERE" ;</p>';
+		if(strlen($_REQUEST['local_db']) > 0)
+			echo '<p>$db = "'.$_REQUEST['local_db'].'";</p>';
+		else
+			echo '<p>$db = "FILEPATH TO DATABASE HERE" ;</p>';							
+		echo '<p>';
+		for($i = 0; $i<$numfacs; $i++){
+			echo 'insert_' . $factors[$i][2] . '_values($server, $api_token);</br>';
+		}	
+		for($i = 0; $i<$numfacs; $i++)
+			print_function($factors[$i]);
+		echo '<p>}</p>';
+		}
+	else{
+		if(strlen($_REQUEST['hosturl']) == 0){
+			$err++;
+			echo '<p>Error: No url provided.</p>';
+		}
+		if(strlen($_REQUEST['api_tok']) == 0){
+			$err++;
+			echo '<p>Error: No token provided.</p>';
+		}
+		if(strlen($_REQUEST['local_db']) == 0){
+			$err++;
+			echo '<p>Error: No database provided.</p>';
+		}
+		if($err)
+			echo '<p>You MUST fill out all advanced options for a direct upload</p>';
+		else{
+			$db = $_REQUEST['local_db'];
+			$api_token = $_REQUEST['api_tok'];
+			$server = $_REQUEST['hosturl'];
+			include 'upload.php';
+			for($i=0; $i<$numfacs; $i++)
+				run_function($factors[$i]);
+		}	
+		
 	}
-	//rest of program
+		
 }
 
 /* This is a messy function that checks for several
@@ -403,7 +477,7 @@ function errorcheck($factors){
 		echo '<p>The number of variables for redcap and access do not match.</br>'.
 		'REDCap: ' .sizeof($factors[0]) . '</br>Access: ' . sizeof($factors[1]) . '</p>';
 		echo '<input id="usagebutton" type="button" value="Show Details" onclick="$(\'#errordump\').toggle()" />';
-		echo '<div id="errordump"><div id="col"><p>Recap '.
+		echo '<div id="errordump"><div id="col"><p>Redcap '.
 					 nl2br(print_r($factors[0], true)) .
 			 '</p></div><div id="col"><p>Access ' .
 			 nl2br(print_r($factors[1], true)) .
@@ -465,7 +539,11 @@ function print_usage(){
 			<form id="sbut" action="parse.php" method="POST">
 				<input type="hidden" name="delete" value="1">
 				<input id="usagebutton" type="submit" value="Clear All" />
-			</form>';	
+			</form>
+			<form id="sbut" action="parse.php" method="POST">
+				<input type="hidden" name="show" value="1">
+				<input id="usagebutton" type="submit" value="Show Script" />
+			</form>';
 		/*	<input id="usagebutton" type="button" value="Advanced Tools" onclick="$(\'#tools\').toggle()" />
 			<form id="tools" action="parse.php" method="POST">
 				<input type*/
@@ -473,5 +551,4 @@ function print_usage(){
 }
 
 ?>
-
 
