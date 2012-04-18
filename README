@@ -1,4 +1,7 @@
-Download and use in localhost directory.
+Download and use in localhost directory or a subdirectory thereof.
 Install PHP and set up your computer to use the access database.
+Run with all three php files in the same directory. 
+This should work with all ODBC-compatible database types, but no promise.
+I'm going to add a few support features soon, such as pulling names directly from a database and having a few exampeles.
 Everything from there should be taken care of!
 
