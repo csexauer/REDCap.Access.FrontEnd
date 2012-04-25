@@ -5,3 +5,5 @@ This should work with all ODBC-compatible database types, but no promise.
 I'm going to add a few support features soon, such as pulling names directly from a database and having a few exampeles.
 Everything from there should be taken care of!
 
+
+I'll continue working on this as soon as I'm done with a few databases at work.
