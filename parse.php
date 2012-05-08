@@ -1,20 +1,4 @@
 <?php
-	/* BASIC PROGRAM FLOW
-	 * 	REQUEST TO DELETE? 
-	 * 	yes										     no
-	 *  clear session, set supress					 do nothing
-	 * 	v							<---------------|
-	 *  MAIN FORM VALUES SENT?
-	 * 	yes											 no
-	 * 	FULL SCRIPT?							     print form
-	 *  yes						no			         v
-	 * 	DIRECT UPLOAD?			print func		     v
-	 * 	yes						no					 v
-	 * 	ADV SETTINGS SET		print script		 v
-	 * 	yes		no				v  					 v
-	 *  UPLOAD	ERROR			v					 v
-	 *  
-	 */
 	session_start();
 ?>
 
@@ -40,94 +24,19 @@
   
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript"></script>
 </script>
-<style type="text/css">
-	body{
-		background-color: F0F0F0;
-	}
-  	p{
-  		margin-bottom: 1.5em;
-  	}
-  	label{
-  		font-weight: bold;
-  		margin-bottom: 5px;
-  	}
-  	.smt{
-  		margin-top: 5px;
-  		margin-left:0;
-  		display: block;
-  		margin-bottom: 15px;
-  		width: 300px;
-  		border-radius: 3px;
-    	-moz-border-radius: 3px;
- 	    border: 1px solid black;
-  	}
-  	textarea{
-  		resize: none;
-  		margin-top: 10px;
-  		width: 800px;
-  		display: block;
- 	    border-radius: 3px;
-     	-moz-border-radius: 3px;
-  	}
-  	#container{
-  		background-color: #F8F8F8;
-  		margin-top: 50px;
-  		margin-bottom: 50px;
-  		width: 800px;
-  		margin-left: auto;
-  		margin-right: auto;
-  		padding-left: 50px;
-  		padding-right: 50px;
-  		padding-top: 25px;
-  		padding-bottom: 50px;
-  		border: 2px dotted grey;
-  		 border-radius: 10px;
-    	-moz-border-radius: 10px;
-  	}
-  	input{
-  		display: block;
-  		margin-top: 30px;
-  		width: 100px;
-  		margin-left: 350px;
-  	}
-  	#usage{
-  		display: none;
-  		margin-bottom: 35px;
-  	}
-  	#tools{
-  		display: none;
-  		margin-bottom: 35px;
-  	}
-  	h1{
-  		margin-bottom: 0px;
-  	}
-  	#usagebutton{
-  		margin-left: 0;
-  		margin-bottom: 10px;
-  	}
-  	.radiobut{
-  		display: inline-block;
-  		width: 15px;
-  		margin:0;
-  	}
-  	#sbut{
-  		margin-bottom:20px;
-  		margin-top: -20px;
-  	}
-  	#errordump{
-  		clear:both;
-  		display: none;
-   		margin-bottom: 50px;
-  	}
-  	#col{
-  		vertical-align: top;
-  		display: inline-block;
-  		margin-right: 200px;
-  	}
-  	a{
-  		clear: both;
-  	}
-  </style>
+<?php
+if((!isset($_REQUEST['show']) and !isset($_REQUEST['fullprgm'])) or
+	 (isset($_REQUEST['fullprgm']) and $_REQUEST['fullprgm'] == 2))
+		print_menu_style();
+else
+	echo '<style type="text/css">
+			body{line-height: 1.1em; font-family:"Courier New"; font-size:10pt; width: 800px;}
+			p{margin: 0;} .include{color: #CC0000;} .fncall{color: #AA0078;} .tags{color: #FF0080; font-weight: bold;}
+			a{display: block;line-height: 3em;} .func{font-weight: bold; color: blue;} .comment{color: green}
+			#errordump{ clear:both; display: none; margin-bottom: 50px;}
+  			#col{vertical-align: top; display: inline-block; padding-right: 3em; }
+			</style>';
+  ?>
 </head>
 <body>
 <div id="container">
@@ -135,9 +44,9 @@
 	$errcond = 0;
 	$supress = 0;
 	$hideform = 0;
+	
 	/* Clears session memory.
-	 * supress supresses the printing of other forms.
-	 */
+	 * supress supresses the printing of other forms. */
 	if(isset($_REQUEST['delete'])){
 		$_SESSION = array();
 		$supress = 1;
@@ -155,21 +64,27 @@
 		echo '<p>Attempting to upload.</p>';
 		print_program($_SESSION['factors']);
 	}
+	
+	if(isset($_REQUEST['fullprgm']) and $_REQUEST['fullprgm'] == 2){
+		get_access_names();
+		$supress = 1;
+	}
+		
 	if(isset($_REQUEST['show'])){
 		$supress = 1;
 		$hideform = 1;
 		if(isset($_SESSION['factors'])){
-			echo '<a href="parse.php">Back</a></br>'; 
+			echo '<a href="parse.php">back</a></br>'; 
 			print_program($_SESSION['factors']);
 		}
 		else echo '<h1>Error:</h1><p>No information stored so far.</p>';
-		echo '<a href="parse.php">Back</a></br>'; 
+		echo '<a href="parse.php">back</a></br>'; 
 	}
-	if(!isset($_REQUEST['redcap']) and !$hideform){
+	if((!isset($_REQUEST['redcap']) and !$hideform) or (isset($_REQUEST['fullprgm']) and $_REQUEST['fullprgm'] == 2)){
 		$supress = 1;
 		print_usage();
 		echo '<form action="parse.php" method="POST">
-				<label>Form Name (raw):';
+				<label>Form Name:';
 				if(isset($_SESSION['refname']))
 					echo '<input class="smt" type="text" name="fname" value="'.$_SESSION['refname'].'"/>';
 				else
@@ -189,18 +104,23 @@
 					echo '<textarea class="textfield" rows=10 name="access"/>'.$_SESSION['reacc'].'</textarea>';
 				else
 					echo '<textarea class="textfield" rows=10 name="access"/></textarea>';
-				echo '</label></br>';
+				echo '</label></br><label>Date Field (for Longitudinal uploads)';
+				if(isset($_SESSION['redate']))
+					echo '<input class="smt" type="text" name="date" value="'.$_SESSION['redate'].'"/>';
+				else
+					echo '<input class="smt" type="text" name="date"/></label>';
 				if(isset($_SESSION['refullprgm'])){
-					if($_SESSION['refullprgm'])
-						echo '<input class="radiobut" type="radio" name="fullprgm" value="1" checked/> Write full php script</br>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" /> Write one function';
+					if($_SESSION['refullprgm'] == 1)
+						echo '<input class="radiobut" type="radio" name="fullprgm" value="1" checked/> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" /> Write one function</br></input>';
 					else
-						echo '<input class="radiobut" type="radio" name="fullprgm" value="1" /> Write full php script</br>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function';
+						echo '<input class="radiobut" type="radio" name="fullprgm" value="1"/> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
 				}
 				else
-					echo '<input class="radiobut" type="radio" name="fullprgm" value="1" /> Write full php script</br>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function';
+					echo '<input class="radiobut" type="radio" name="fullprgm" value="1" /> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
+				echo '<input class="radiobut" type="radio" name="fullprgm" value="2" /> Get column names from access</input>';
 				echo '</br></br><label>Advanced options for script construction.</br>
 						Leaving these blank is allowable. You can set them in the script\'s header.</br></br>
 						Access File:';
@@ -233,6 +153,7 @@
 		$access = trim($_REQUEST['access']);
 		$form = $_REQUEST['fname'];
 		$table = $_REQUEST['tname'];
+		$date = $_REQUEST['date'];
 		if(strlen($redcap) == 0){
 			echo '<h1>Errors:</h1>
 			<p>REDCap values not specified</p>';
@@ -240,7 +161,10 @@
 			unset($_SESSION['rerdc']);
 		}
 		else{$_SESSION['rerdc'] = $redcap;}
-		
+		if(strlen($date) == 0){
+			unset($_SESSION['redate']);
+		}
+		else{$_SESSION['redate'] = $date;}
 		if(strlen($access) == 0){
 			if(!$errcond){	echo '<h1>Errors:</h1>'; }
 			echo '<p>Access values not specified</p>';
@@ -285,11 +209,15 @@
 		
 		$redcap = makerc($redcap);
 		$access = makeac($access);
-		$factors = array($redcap, $access, $form, $table);
+		if(isset($_SESSION['redate']))
+			$sort = $_SESSION['redate'];
+		else
+			$sort = 0;
+		$factors = array($redcap, $access, $form, $table, $sort);
 			if(!$errcond and !errorcheck($factors)){
-				if($_SESSION['refullprgm']){
+				if($_SESSION['refullprgm'] == 1){
 					if(isset($_SESSION['factors'])){
-						echo '<a href="parse.php">Back</a></br>'; 
+						echo '<a href="parse.php">back</a></br>'; 
 						unset($_SESSION['retname']);
 						unset($_SESSION['refname']);
 						unset($_SESSION['rerdc']);
@@ -305,7 +233,7 @@
 					print_function($factors);
 				}
 			}
-		echo '<a href="parse.php">Back</a>';
+		echo '<a href="parse.php">back</a>';
 	}
 	
 
@@ -376,14 +304,15 @@ function print_function($factors){
 	$access = $factors[1];
 	$form = $factors[2];
 	$table = $factors[3];
-	echo '<p>function insert_' . $form . '_values($server, $api_token, $db){';
-	echo '<p>$REDCapVariables=array(';
+	$date = $factors[4];
+	echo '</br><p class="func">function insert_' . $form . '_values($server, $api_token, $db){</p>';
+	echo '<p>&nbsp $REDCapVariables=array(';
 	for($i = 0;$i <sizeof($redcap); $i++){
 		echo '"' . $redcap[$i] . '"';	
 			if(($i + 1) < sizeof($redcap)){echo ', ';}
 	}
 	echo ');</p>';
-	echo '<p>$SQL = "SELECT ';
+	echo '<p>&nbsp $SQL = "SELECT ';
 	for($i = 0; $i<sizeof($access); $i++){
 		echo '[' . $access[$i] . ']';
 		if(strtolower($redcap[$i]) != strtolower($access[$i])){
@@ -391,9 +320,12 @@ function print_function($factors){
 		}
 		if(($i + 1) < sizeof($access)){	echo ', ';}
 	}
-	echo ' FROM [' . $table . '] ORDER BY ['. $redcap[0].']";</p>';
-	echo '<p>$theevent = "'.$form.'";</p>';
-	echo '<p>insertGenericValue($REDCapVariables, $SQL, $theevent, $server, $api_token, $db);';
+	if($date)
+		echo ' FROM [' . $table . '] ORDER BY ['. $redcap[0].'],FORMAT(['.$date.'], "yyyy/mm/dd")";</p>';
+	else
+		echo ' FROM [' . $table . '] ORDER BY ['. $redcap[0].']";</p>';
+	echo '<p>&nbsp $theevent = "'.$form.'";</p>';
+	echo '<p class="fncall">&nbsp insertGenericValue($REDCapVariables, $SQL, $theevent, $server, $api_token, $db);';
 	echo '<p>}</p>';		
 }
 function run_function($factors){
@@ -401,7 +333,7 @@ function run_function($factors){
 	$access = $factors[1];
 	$form = $factors[2];
 	$table = $factors[3];
-	
+	$date = $factors[4];
 	$SQL = "SELECT ";
 	for($i = 0; $i<sizeof($access); $i++){
 		$SQL = $SQL . '[' . $access[$i] . ']';
@@ -410,7 +342,10 @@ function run_function($factors){
 		}
 		if(($i + 1) < sizeof($access)){	$SQL = $SQL .', ';}
 	}
-	$SQL = $SQL . ' FROM [' . $table . '] ORDER BY ['. $redcap[0].']';
+	if($date)
+		$SQL = $SQL . ' FROM [' . $table . '] ORDER BY ['.$redcap[0].'], FORMAT(['.$date.'], "yyyy/mm/dd")';
+	else
+		$SQL = $SQL . ' FROM [' . $table . '] ORDER BY ['. $redcap[0].']';
 	insertGenericValue($redcap, $SQL, $form, $_REQUEST['hosturl'],
 			 $_REQUEST['api_tok'], $_REQUEST['local_db']);
 }
@@ -422,25 +357,26 @@ function print_program($factors){
 	$numfacs = sizeof($factors);
 	$err = 0;
 	if(!isset($_REQUEST['upload'])){
-		echo "</br>Put whatever header and style information you want around this and run it.</br>
+		echo '<br><p class="tags">&lt?php</p>';
+		echo "</br><p class=\"comment\">/* Put whatever header and style information you want around this and run it.</br>
 				You need to run it in the same directory as upload.php and open.php, and you must have php installed.</br>
-				Note: there must be beginning and ending php tags around this code</br> <br>";
-		echo 'include \'upload.php\';</br>';
+				Remember to delete the back links! They won't kill the program, but they'll look ugly :) */</p></br> <br>";
+		echo '<p class="include">include \'upload.php\';</p></br>';
 		if(isset($_REQUEST['hosturl']) and strlen($_REQUEST['hosturl']) > 0)
 			echo '<p>$server = "'.$_REQUEST['hosturl'].'";</p>';
 		else
-			echo '<p>$server = "SERVER URL HERE" ;</p>';
+			echo '<p>$server = "SERVER URL HERE";</p>';
 		if(isset($_REQUEST['api_tok']) and strlen($_REQUEST['api_tok']) > 0)
 			echo '<p>$api_token = "'.$_REQUEST['api_tok'].'";</p>';
 		else
-			echo '<p>$api_token = "YOUR TOKEN NAME HERE" ;</p>';
+			echo '<p>$api_token = "YOUR TOKEN NAME HERE";</p>';
 		if(isset($_REQUEST['api_tok']) and strlen($_REQUEST['local_db']) > 0)
 			echo '<p>$db = "'.$_REQUEST['local_db'].'";</p>';
 		else
-			echo '<p>$db = "FILEPATH TO DATABASE HERE" ;</p>';							
-		echo '<p>';
+			echo '<p>$db = "FILEPATH TO DATABASE HERE";</p>';							
+		echo '</br><p>';
 		for($i = 0; $i<$numfacs; $i++){
-			echo 'insert_' . $factors[$i][2] . '_values($server, $api_token, $db);</br>';
+			echo '<p class="fncall">insert_' . $factors[$i][2] . '_values($server, $api_token, $db);</p>';
 		}	
 		for($i = 0; $i<$numfacs; $i++)
 			print_function($factors[$i]);
@@ -471,7 +407,7 @@ function print_program($factors){
 		}	
 		
 	}
-		
+	echo '</br><p class="tags">?&gt</p>';	
 }
 
 /* This is a messy function that checks for several
@@ -554,5 +490,135 @@ function print_usage(){
 			
 }
 
-?>
+function get_access_names(){
+	$errcond=0;
+		if(strlen($_REQUEST['tname']) == 0){
+			echo '<h1>Error:</h1><p>Specify an access table to take names from.</p>';
+			$errcond++;
+		}
+		else $_SESSION['retname'] = $table = $_REQUEST['tname'];
+		if(strlen($_REQUEST['local_db']) == 0){
+			echo '<h1>Error:</h1><p>Specify a database file to take names from.</p>';
+			$errcond++;
+		}
+		else $_SESSION['relocal_db'] = $db = $_REQUEST['local_db'];
+		if(!$errcond){
+			include("open.php");
+			$conn = connect($db);
+			$rstring = "";
+			if(connected($conn)){
+				if($names = odbc_exec($conn, 'select * from ['.$table.'] where 1=2')){
+					$ncols = odbc_num_fields($names);
+					echo '<p>' .$ncols. ' columns found. Be sure to clean out columns that don\'t belong in REDCap.</p>';
+					for($n=1; $n<=$ncols; $n++){
+					//	echo $n;
+					//	echo ": ";
+					//	echo odbc_field_name($names, $n);
+					//	echo "</br>";
+						$rstring = $rstring . odbc_field_name($names, $n) . chr(9);
+					}
+					$_SESSION['reacc'] = $rstring;
+				}	
+				else
+					echo '<h1>Error:</h1><p>Couldn\'t pull column info.</p><p>Database: '. $db .'</p><p>Table: '.$table.'</p>';
+ 			}
+		
+			else
+				echo '<h1>Error:</h1><p>Couldn\'t connect to that database.</p>';
+		}
+}
 
+function print_menu_style(){
+	echo '<style type="text/css">
+	body{
+		background-color: F0F0F0;
+	}
+  	p{
+  		margin-bottom: 1.5em;
+  	}
+  	label{
+  		font-weight: bold;
+  		margin-bottom: 5px;
+  	}
+  	.smt{
+  		margin-top: 5px;
+  		margin-left:0;
+  		display: block;
+  		margin-bottom: 15px;
+  		width: 300px;
+  		border-radius: 3px;
+    	-moz-border-radius: 3px;
+ 	    border: 1px solid black;
+  	}
+  	#getnames{
+
+  	}
+  	textarea{
+  		resize: none;
+  		margin-top: 10px;
+  		width: 800px;
+  		display: block;
+ 	    border-radius: 3px;
+     	-moz-border-radius: 3px;
+  	}
+  	#container{
+  		background-color: #F8F8F8;
+  		margin-top: 50px;
+  		margin-bottom: 50px;
+  		width: 800px;
+  		margin-left: auto;
+  		margin-right: auto;
+  		padding-left: 50px;
+  		padding-right: 50px;
+  		padding-top: 25px;
+  		padding-bottom: 50px;
+  		border: 2px dotted grey;
+  		 border-radius: 10px;
+    	-moz-border-radius: 10px;
+  	}
+  	input{
+  		display: block;
+  		margin-top: 30px;
+  		width: 100px;
+  		margin-left: 350px;
+  	}
+  	#usage{
+  		display: none;
+  		margin-bottom: 35px;
+  	}
+  	#tools{
+  		display: none;
+  		margin-bottom: 35px;
+  	}
+  	h1{
+  		margin-bottom: 0px;
+  	}
+  	#usagebutton{
+  		margin-left: 0;
+  		margin-bottom: 10px;
+  	}
+  	.radiobut{
+  		display: inline-block;
+  		width: 15px;
+  		margin:0;
+  	}
+  	#sbut{
+  		margin-bottom:20px;
+  		margin-top: -20px;
+  	}
+  	#errordump{
+  		clear:both;
+  		display: none;
+   		margin-bottom: 50px;
+  	}
+  	#col{
+  		vertical-align: top;
+  		display: inline-block;
+  		margin-right: 200px;
+  	}
+  	a{
+  		clear: both;
+  	}
+  </style>';
+}
+?>
