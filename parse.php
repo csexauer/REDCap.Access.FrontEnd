@@ -51,12 +51,6 @@ else
 		$_SESSION = array();
 		$supress = 1;
 	}		
-	/* Prints forms, prepopulating when there are set session variables.
-	 * Those variables clear when memory is manually cleared, or when
-	 * there is a successful program-style update to the session's program
-	 * note that supress isn't necessary here, but it exists for adding more
-	 * functionalities.
-	 */
 	if(isset($_REQUEST['upload'])){
 		$supress = 1;
 		$hideform = 1;
@@ -83,157 +77,10 @@ else
 	if((!isset($_REQUEST['redcap']) and !$hideform) or (isset($_REQUEST['fullprgm']) and $_REQUEST['fullprgm'] == 2)){
 		$supress = 1;
 		print_usage();
-		echo '<form action="parse.php" method="POST">
-				<label>Form Name:';
-				if(isset($_SESSION['refname']))
-					echo '<input class="smt" type="text" name="fname" value="'.$_SESSION['refname'].'"/>';
-				else
-					echo '<input class="smt" type="text" name="fname"/>';
-				echo '</label><label>Table Name:';
-				if(isset($_SESSION['retname']))
-					echo '<input class="smt" type="text" name="tname" value="'.$_SESSION['retname'].'"/>';
-				else
-					echo '<input class="smt" type="text" name="tname"/>';
-				echo '</label></br><label>Redcap Names:';
-				if(isset($_SESSION['rerdc']))
-					echo '<textarea class="textfield" rows=10 name="redcap"/>'.$_SESSION['rerdc'].'</textarea>';
-				else
-					echo '<textarea class="textfield" rows=10 name="redcap"/></textarea>';
-				echo '</label></br><label>Access';
-				if(isset($_SESSION['reacc']))
-					echo '<textarea class="textfield" rows=10 name="access"/>'.$_SESSION['reacc'].'</textarea>';
-				else
-					echo '<textarea class="textfield" rows=10 name="access"/></textarea>';
-				echo '</label></br><label>Date Field (for Longitudinal uploads)';
-				if(isset($_SESSION['redate']))
-					echo '<input class="smt" type="text" name="date" value="'.$_SESSION['redate'].'"/>';
-				else
-					echo '<input class="smt" type="text" name="date"/></label>';
-				if(isset($_SESSION['refullprgm'])){
-					if($_SESSION['refullprgm'] == 1)
-						echo '<input class="radiobut" type="radio" name="fullprgm" value="1" checked/> Write full php script</br></input>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" /> Write one function</br></input>';
-					else
-						echo '<input class="radiobut" type="radio" name="fullprgm" value="1"/> Write full php script</br></input>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
-				}
-				else
-					echo '<input class="radiobut" type="radio" name="fullprgm" value="1" /> Write full php script</br></input>
-						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
-				echo '<input class="radiobut" type="radio" name="fullprgm" value="2" /> Get column names from access</input>';
-				echo '</br></br><label>Advanced options for script construction.</br>
-						Leaving these blank is allowable. You can set them in the script\'s header.</br></br>
-						Access File:';
-				if(isset($_SESSION['relocal_db']))
-					echo '<input class="smt" type="text" value='.$_SESSION['relocal_db'].' name="local_db"/>';
-				else 
-					echo '<input class="smt" type="text" name="local_db"/>';
-				echo '</label><label>Your API Token:';
-				if(isset($_SESSION['reapi_tok']))
-					echo '<input class="smt" type="text" value='.$_SESSION['reapi_tok'].' name="api_tok"/>';
-				else 
-					echo '<input class="smt" type="text" name="api_tok"/>';
-				echo '</label><label>The URL of your REDCap Server:';
-				if(isset($_SESSION['rehosturl']))
-					echo '<input class="smt" type="text" value='.$_SESSION['rehosturl'] .' name="hosturl"/>';
-				else
-					echo '<input class="smt" type="text" name="hosturl"/>';
-				echo '</label><input class="radiobut" type="checkbox" name="upload" value="1"/> Upload from this script (only suitable for small databases due to timeout)<br/>';
-				echo '<input class="submitbutton" type="submit" value="GO!" /></form>';
-				}
-	/* Handling submissions:
-	 * if no supressors are on, the script either
-	 *  - prints a function
-	 *  - prints a program
-	 *  - attempts to update the server, listing
-	 *    validation errors, etc.
-	 */
+		print_form();
+	}
 	if(!$supress){
-		$redcap = trim($_REQUEST['redcap']);
-		$access = trim($_REQUEST['access']);
-		$form = $_REQUEST['fname'];
-		$table = $_REQUEST['tname'];
-		$date = $_REQUEST['date'];
-		if(strlen($redcap) == 0){
-			echo '<h1>Errors:</h1>
-			<p>REDCap values not specified</p>';
-			$errcond++;
-			unset($_SESSION['rerdc']);
-		}
-		else{$_SESSION['rerdc'] = $redcap;}
-		if(strlen($date) == 0){
-			unset($_SESSION['redate']);
-		}
-		else{$_SESSION['redate'] = $date;}
-		if(strlen($access) == 0){
-			if(!$errcond){	echo '<h1>Errors:</h1>'; }
-			echo '<p>Access values not specified</p>';
-			$errcond++;
-			unset($_SESSION['reacc']);
-		}
-		else{$_SESSION['reacc'] = $access;}
-		
-		if(strlen($form) == 0){
-			if(!$errcond){	echo '<h1>Errors:</h1>'; }
-			echo '<p>Form name not specified</p>';
-			$errcond++;
-			unset($_SESSION['refname']);
-		}
-		else{$_SESSION['refname'] = $form;}
-		if(strlen($table) == 0){
-			if(!$errcond){	echo '<h1>Errors:</h1>'; }
-			echo '<p>Table name not specified</p>';
-			$errcond++;
-			unset($_SESSION['retname']);
-		}
-		else{$_SESSION['retname'] = $table;}
-		if(isset($_REQUEST['fullprgm']))
-			$_SESSION['refullprgm'] = $_REQUEST['fullprgm'];
-		else { $_SESSION['refullprgm'] = 0;}
-		if(!isset($_REQUEST['fullprgm']) || !$_REQUEST['fullprgm'])
-			$_SESSION['fullprgm'] = 0;
-		if(strlen($_REQUEST['local_db']) > 0)
-			$_SESSION['relocal_db'] = $_REQUEST['local_db'];
-		else
-			unset($_SESSION['relocal_db']);
-		if(strlen($_REQUEST['api_tok']) > 0)
-			$_SESSION['reapi_tok'] = $_REQUEST['api_tok'];
-		else
-			unset($_SESSION['relocal_db']);
-		if(strlen($_REQUEST['hosturl']) > 0)
-			$_SESSION['rehosturl'] = $_REQUEST['hosturl'];
-		else
-			unset($_SESSION['rehosturl']);
-			
-		/* This is where the magic happens */
-		
-		$redcap = makerc($redcap);
-		$access = makeac($access);
-		if(isset($_SESSION['redate']))
-			$sort = $_SESSION['redate'];
-		else
-			$sort = 0;
-		$factors = array($redcap, $access, $form, $table, $sort);
-			if(!$errcond and !errorcheck($factors)){
-				if($_SESSION['refullprgm'] == 1){
-					if(isset($_SESSION['factors'])){
-						echo '<a href="parse.php">back</a></br>'; 
-						unset($_SESSION['retname']);
-						unset($_SESSION['refname']);
-						unset($_SESSION['rerdc']);
-						unset($_SESSION['reacc']);
-						array_push($_SESSION['factors'],$factors);
-					}
-					else{
-						$_SESSION['factors'] = array($factors);
-					}
-					print_program($_SESSION['factors']);
-				}
-				else{
-					print_function($factors);
-				}
-			}
-		echo '<a href="parse.php">back</a>';
+		handle_input();
 	}
 	
 
@@ -620,5 +467,154 @@ function print_menu_style(){
   		clear: both;
   	}
   </style>';
+}
+
+function print_form(){
+	echo '<form action="parse.php" method="POST">
+				<label>Form Name:';
+				if(isset($_SESSION['refname']))
+					echo '<input class="smt" type="text" name="fname" value="'.$_SESSION['refname'].'"/>';
+				else
+					echo '<input class="smt" type="text" name="fname"/>';
+				echo '</label><label>Table Name:';
+				if(isset($_SESSION['retname']))
+					echo '<input class="smt" type="text" name="tname" value="'.$_SESSION['retname'].'"/>';
+				else
+					echo '<input class="smt" type="text" name="tname"/>';
+				echo '</label></br><label>Redcap Names:';
+				if(isset($_SESSION['rerdc']))
+					echo '<textarea class="textfield" rows=10 name="redcap"/>'.$_SESSION['rerdc'].'</textarea>';
+				else
+					echo '<textarea class="textfield" rows=10 name="redcap"/></textarea>';
+				echo '</label></br><label>Access';
+				if(isset($_SESSION['reacc']))
+					echo '<textarea class="textfield" rows=10 name="access"/>'.$_SESSION['reacc'].'</textarea>';
+				else
+					echo '<textarea class="textfield" rows=10 name="access"/></textarea>';
+				echo '</label></br><label>Date Field (for Longitudinal uploads)';
+				if(isset($_SESSION['redate']))
+					echo '<input class="smt" type="text" name="date" value="'.$_SESSION['redate'].'"/></label>';
+				else
+					echo '<input class="smt" type="text" name="date"/></label>';
+				if(isset($_SESSION['refullprgm'])){
+					if($_SESSION['refullprgm'] == 1)
+						echo '<input class="radiobut" type="radio" name="fullprgm" value="1" checked/> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" /> Write one function</br></input>';
+					else
+						echo '<input class="radiobut" type="radio" name="fullprgm" value="1"/> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
+				}
+				else
+					echo '<input class="radiobut" type="radio" name="fullprgm" value="1" /> Write full php script</br></input>
+						<input class="radiobut" type="radio" name="fullprgm" value="0" checked/> Write one function</br></input>';
+				echo '<input class="radiobut" type="radio" name="fullprgm" value="2" /> Get column names from access</input>';
+				echo '</br></br><label>Advanced options for script construction.</br>
+						Leaving these blank is allowable. You can set them in the script\'s header.</br></br>
+						Access File:';
+				if(isset($_SESSION['relocal_db']))
+					echo '<input class="smt" type="text" value='.$_SESSION['relocal_db'].' name="local_db"/>';
+				else 
+					echo '<input class="smt" type="text" name="local_db"/>';
+				echo '</label><label>Your API Token:';
+				if(isset($_SESSION['reapi_tok']))
+					echo '<input class="smt" type="text" value='.$_SESSION['reapi_tok'].' name="api_tok"/>';
+				else 
+					echo '<input class="smt" type="text" name="api_tok"/>';
+				echo '</label><label>The URL of your REDCap Server:';
+				if(isset($_SESSION['rehosturl']))
+					echo '<input class="smt" type="text" value='.$_SESSION['rehosturl'] .' name="hosturl"/>';
+				else
+					echo '<input class="smt" type="text" name="hosturl"/>';
+				echo '</label><input class="radiobut" type="checkbox" name="upload" value="1"/> Upload from this script (only suitable for small databases due to timeout)<br/>';
+				echo '<input class="submitbutton" type="submit" value="GO!" /></form>';
+}
+
+function handle_input(){
+	$errcond = 0;
+	$redcap = trim($_REQUEST['redcap']);
+		$access = trim($_REQUEST['access']);
+		$form = $_REQUEST['fname'];
+		$table = $_REQUEST['tname'];
+		$date = $_REQUEST['date'];
+		if(strlen($redcap) == 0){
+			echo '<h1>Errors:</h1>
+			<p>REDCap values not specified</p>';
+			$errcond++;
+			unset($_SESSION['rerdc']);
+		}
+		else{$_SESSION['rerdc'] = $redcap;}
+		if(strlen($date) == 0){
+			unset($_SESSION['redate']);
+		}
+		else{$_SESSION['redate'] = $date;}
+		if(strlen($access) == 0){
+			if(!$errcond){	echo '<h1>Errors:</h1>'; }
+			echo '<p>Access values not specified</p>';
+			$errcond++;
+			unset($_SESSION['reacc']);
+		}
+		else{$_SESSION['reacc'] = $access;}
+		
+		if(strlen($form) == 0){
+			if(!$errcond){	echo '<h1>Errors:</h1>'; }
+			echo '<p>Form name not specified</p>';
+			$errcond++;
+			unset($_SESSION['refname']);
+		}
+		else{$_SESSION['refname'] = $form;}
+		if(strlen($table) == 0){
+			if(!$errcond){	echo '<h1>Errors:</h1>'; }
+			echo '<p>Table name not specified</p>';
+			$errcond++;
+			unset($_SESSION['retname']);
+		}
+		else{$_SESSION['retname'] = $table;}
+		if(isset($_REQUEST['fullprgm']))
+			$_SESSION['refullprgm'] = $_REQUEST['fullprgm'];
+		else { $_SESSION['refullprgm'] = 0;}
+		if(!isset($_REQUEST['fullprgm']) || !$_REQUEST['fullprgm'])
+			$_SESSION['fullprgm'] = 0;
+		if(strlen($_REQUEST['local_db']) > 0)
+			$_SESSION['relocal_db'] = $_REQUEST['local_db'];
+		else
+			unset($_SESSION['relocal_db']);
+		if(strlen($_REQUEST['api_tok']) > 0)
+			$_SESSION['reapi_tok'] = $_REQUEST['api_tok'];
+		else
+			unset($_SESSION['relocal_db']);
+		if(strlen($_REQUEST['hosturl']) > 0)
+			$_SESSION['rehosturl'] = $_REQUEST['hosturl'];
+		else
+			unset($_SESSION['rehosturl']);
+			
+		/* This is where the magic happens */
+		
+		$redcap = makerc($redcap);
+		$access = makeac($access);
+		if(isset($_SESSION['redate']))
+			$sort = $_SESSION['redate'];
+		else
+			$sort = 0;
+		$factors = array($redcap, $access, $form, $table, $sort);
+			if(!$errcond and !errorcheck($factors)){
+				if($_SESSION['refullprgm'] == 1){
+					if(isset($_SESSION['factors'])){
+						echo '<a href="parse.php">back</a></br>'; 
+						unset($_SESSION['retname']);
+						unset($_SESSION['refname']);
+						unset($_SESSION['rerdc']);
+						unset($_SESSION['reacc']);
+						array_push($_SESSION['factors'],$factors);
+					}
+					else{
+						$_SESSION['factors'] = array($factors);
+					}
+					print_program($_SESSION['factors']);
+				}
+				else{
+					print_function($factors);
+				}
+			}
+		echo '<a href="parse.php">back</a>';
 }
 ?>
